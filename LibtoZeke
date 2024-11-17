@@ -1,0 +1,187 @@
+local HUDLibrary = {}
+
+function HUDLibrary.new(title)
+    local UserInputService = game:GetService("UserInputService")
+
+    -- Criar a HUD principal
+    local hud = Instance.new("ScreenGui")
+    hud.Name = title
+    hud.ResetOnSpawn = false
+    hud.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Detecta se é um dispositivo Android ou PC
+    local isMobile = UserInputService.TouchEnabled or (UserInputService.GamepadEnabled and not UserInputService.KeyboardEnabled)
+
+    -- Criar o frame principal (HUD) com o layout apropriado para cada dispositivo
+    local mainFrame = Instance.new("Frame")
+    if isMobile then
+        -- HUD para Android (mobile) - aumentada lateralmente
+        mainFrame.Size = UDim2.new(0, 750 / 1.5, 0, 500 / 1.5)  -- Aumentar largura da HUD
+        mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)  -- Centralizar no meio da tela
+        mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)  -- Definir o ponto de ancoragem no centro
+    else
+        -- HUD para PC (desktop) - Mantém o comportamento anterior
+        mainFrame.Size = UDim2.new(0.35, 0, 0.35, 0) -- Tamanho proporcional à tela
+        mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Sempre centralizado
+        mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)  -- Centraliza no ponto médio
+    end
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    mainFrame.BackgroundTransparency = 0.5  -- Transparência reduzida
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = hud
+
+    -- Adicionar contorno RGB
+    local uiStroke = Instance.new("UIStroke")
+    uiStroke.Thickness = 3 -- Espessura da borda
+    uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    uiStroke.Parent = mainFrame
+
+    -- Adicionar cantos arredondados ao contorno da HUD
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 15) -- Arredondamento suave
+    corner.Parent = mainFrame
+
+    -- Criar um container para o título
+    local titleFrame = Instance.new("Frame")
+    if isMobile then
+        titleFrame.Size = UDim2.new(1, 0, 0.2, 0) -- Ajuste para Android
+    else
+        titleFrame.Size = UDim2.new(1, 0, 0.15, 0) -- Menor altura no PC
+    end
+    titleFrame.Position = UDim2.new(0, 0, 0.03, 0) -- Leve ajuste no container do título
+    titleFrame.BackgroundTransparency = 1 -- Fundo do título transparente
+    titleFrame.LayoutOrder = 0
+    titleFrame.Parent = mainFrame
+
+    -- Criar o título
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, 0, 1, 0)
+    titleLabel.Position = UDim2.new(0, 0, 0, 0) -- Centralizado dentro do frame
+    titleLabel.Text = title
+    titleLabel.Font = Enum.Font.FredokaOne -- Fonte arredondada e estilosa
+    if isMobile then
+        titleLabel.TextSize = 120 / 1.5 -- Tamanho ajustado para Android
+    else
+        titleLabel.TextScaled = true -- Texto escala automaticamente no PC
+    end
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255) -- Cor inicial (será alterada pelo script RGB)
+    titleLabel.TextStrokeTransparency = 0.8 -- Sombra sutil no texto
+    titleLabel.BackgroundTransparency = 1 -- Título transparente
+    titleLabel.Parent = titleFrame
+
+    -- Script para animar a cor RGB do título
+    spawn(function()
+        local hue = 0
+        while true do
+            hue = (hue + 3) % 360 -- Incremento mais rápido no hue
+            local color = Color3.fromHSV(hue / 360, 1, 1)
+            uiStroke.Color = color
+            titleLabel.TextColor3 = color
+            wait(0.03) -- Tempo de espera reduzido para maior velocidade
+        end
+    end)
+
+    -- Criar container para os elementos da HUD
+    local contentFrame = Instance.new("Frame")
+    if isMobile then
+        contentFrame.Size = UDim2.new(1, 0, 0.8, 0) -- Espaço ajustado para Android
+        contentFrame.Position = UDim2.new(0, 0, 0.2, 0) -- Informações abaixo do título no Android
+    else
+        contentFrame.Size = UDim2.new(1, 0, 0.7, 0) -- Altura ajustada no PC
+        contentFrame.Position = UDim2.new(0, 0, 0.3, 0) -- Informações abaixo do título no PC
+    end
+    contentFrame.BackgroundTransparency = 1
+    contentFrame.Parent = mainFrame
+
+    -- Adicionar sistema de layout vertical para os elementos
+    local layout = Instance.new("UIListLayout")
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    if isMobile then
+        layout.Padding = UDim.new(0, 35 / 1.5) -- Maior espaçamento para Android
+    else
+        layout.Padding = UDim.new(0.1, 0) -- Espaçamento maior no PC
+    end
+    layout.Parent = contentFrame
+
+    local elements = {}
+
+    -- Métodos da HUD
+    local hudAPI = {}
+
+    function hudAPI:addLabel(name, defaultText)
+        local label = Instance.new("TextLabel")
+        if isMobile then
+            label.Size = UDim2.new(1, 0, 0.15, 0) -- Tamanho ajustado para Android
+            label.TextSize = 70 / 1.5 -- Tamanho ajustado para Android
+        else
+            label.Size = UDim2.new(1, 0, 0.1, 0) -- Tamanho ajustado para PC
+            label.TextScaled = true -- Escalável no PC
+        end
+        label.Name = name
+        label.Text = defaultText
+        label.Font = Enum.Font.FredokaOne
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.TextStrokeTransparency = 0.8
+        label.BackgroundTransparency = 1
+        label.LayoutOrder = #elements + 1
+        label.Parent = contentFrame
+
+        elements[name] = label
+    end
+
+    function hudAPI:addHorizontalGroup(name, items)
+        local groupFrame = Instance.new("Frame")
+        if isMobile then
+            groupFrame.Size = UDim2.new(1, 0, 0.15, 0) -- Tamanho ajustado para Android
+        else
+            groupFrame.Size = UDim2.new(1, 0, 0.1, 0) -- Tamanho ajustado para PC
+        end
+        groupFrame.BackgroundTransparency = 1
+        groupFrame.LayoutOrder = #elements + 1
+        groupFrame.Parent = contentFrame
+
+        -- Layout horizontal
+        local horizontalLayout = Instance.new("UIListLayout")
+        horizontalLayout.FillDirection = Enum.FillDirection.Horizontal
+        horizontalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        horizontalLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        if isMobile then
+            horizontalLayout.Padding = UDim.new(0.07, 0) -- Espaçamento maior entre dinheiro, ovo e poção
+        else
+            horizontalLayout.Padding = UDim.new(0.05, 0) -- Espaçamento maior para PC
+        end
+        horizontalLayout.Parent = groupFrame
+
+        for _, item in ipairs(items) do
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(0.25, 0, 1, 0) -- Proporção ajustada
+            label.Name = item.name
+            label.Text = item.text
+            label.Font = Enum.Font.FredokaOne
+            if isMobile then
+                label.TextSize = 70 / 1.5 -- Tamanho ajustado para Android
+            else
+                label.TextScaled = true -- Escalável no PC
+            end
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.TextStrokeTransparency = 0.8
+            label.BackgroundTransparency = 1
+            label.LayoutOrder = item.order
+            label.Parent = groupFrame
+
+            elements[item.name] = label
+        end
+    end
+
+    function hudAPI:updateLabel(name, newText)
+        if elements[name] then
+            elements[name].Text = newText
+        else
+            warn("Elemento não encontrado na HUD: " .. name)
+        end
+    end
+
+    return hudAPI
+end
+
+return HUDLibrary
